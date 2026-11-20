@@ -9,6 +9,17 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="manifest" href="./manifest.webmanifest">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('xiaotong.theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <style>
 :root{
   --bg:#f4f6f9; --panel:#ffffff; --side:#eef2f7; --text:#101418; --muted:#5f6b7a;
@@ -17,14 +28,12 @@
   --code-bg:#0f172a; --code-text:#e6edf3; --shadow:0 1px 2px rgba(16,24,40,.06);
   --hover:rgba(27,94,158,.08); --active:rgba(27,94,158,.14);
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#0d1117; --panel:#161b22; --side:#11161d; --text:#e6edf3; --muted:#8b949e;
-    --line:#242c36; --accent:#4c9ff0; --accent-soft:#16263a;
-    --user-bg:#1f6fb8; --user-text:#ffffff;
-    --code-bg:#0a0f16; --code-text:#dce6f0; --shadow:none;
-    --hover:rgba(76,159,240,.10); --active:rgba(76,159,240,.18);
-  }
+:root[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --side:#11161d; --text:#e6edf3; --muted:#8b949e;
+  --line:#242c36; --accent:#4c9ff0; --accent-soft:#16263a;
+  --user-bg:#1f6fb8; --user-text:#ffffff;
+  --code-bg:#0a0f16; --code-text:#dce6f0; --shadow:none;
+  --hover:rgba(76,159,240,.10); --active:rgba(76,159,240,.18);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -38,6 +47,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 a{color:var(--accent)}
 
 .app{display:flex;height:100%;}
+.app.sb-collapsed .sidebar{display:none}
+.app.sb-collapsed .backdrop{display:none}
 
 /* ---------- 左侧历史 ---------- */
 .sidebar{
@@ -234,6 +245,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
 }
 @media (min-width:721px){
   #menuBtn{display:none}
+  .app.sb-collapsed #menuBtn{display:inline-flex}
 }
 </style>
 </head>
@@ -244,6 +256,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   <aside class="sidebar" id="sidebar">
     <div class="sb-head">
       <div class="brand"><img src="./icon-192.png" alt=""><span>小通</span></div>
+      <button class="icon-btn" id="sbToggle" type="button" title="收起侧栏" aria-label="收起侧栏">«</button>
     </div>
     <div class="sb-list" id="convList"></div>
   </aside>
@@ -254,6 +267,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
       <button class="icon-btn" id="menuBtn" title="历史对话" aria-label="历史对话">☰</button>
       <div class="title" id="chatTitle">新对话</div>
       <button class="icon-btn" id="newBtn" title="新对话" aria-label="新对话">＋</button>
+      <button class="icon-btn" id="themeBtn" title="切换到浅色" aria-label="切换深色/浅色">☾</button>
       <button class="icon-btn" id="keyBtn" title="设置" aria-label="设置">⚙</button>
     </header>
 
@@ -321,6 +335,8 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   var K_KEY = 'xiaotong.apiKey';
   var K_MODEL = 'xiaotong.model';
   var K_THINK = 'xiaotong.think';
+  var K_SB = 'xiaotong.sidebarCollapsed';
+  var K_THEME = 'xiaotong.theme';
   var K_SEARCH = 'xiaotong.search';
   var K_DATA = 'xiaotong.data.v2';
   var K_OLD = 'xiaotong.chat';
@@ -330,6 +346,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
     model: localStorage.getItem(K_MODEL) || 'deepseek-chat',
     think: localStorage.getItem(K_THINK) === '1' || localStorage.getItem(K_MODEL) === 'deepseek-reasoner',
     search: localStorage.getItem(K_SEARCH) === '1',
+    sbCollapsed: localStorage.getItem(K_SB) === '1',
     convs: [],
     currentId: null,
     controller: null,
@@ -343,6 +360,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   var input = document.getElementById('input');
   var sendBtn = document.getElementById('send');
   var stopBtn = document.getElementById('stop');
+  var themeBtn = document.getElementById('themeBtn');
   var thinkBtn = document.getElementById('thinkBtn');
   var searchBtn = document.getElementById('searchBtn');
   var chatTitle = document.getElementById('chatTitle');
@@ -591,6 +609,46 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
 
   function openSidebar() { app.classList.add('drawer'); }
   function closeSidebar() { app.classList.remove('drawer'); }
+
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function paintTheme() {
+    var dark = currentTheme() === 'dark';
+    themeBtn.textContent = dark ? '☀' : '☾';
+    themeBtn.title = dark ? '切换到浅色' : '切换到深色';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#0d1117' : '#1b5e9e');
+  }
+
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(K_THEME, theme);
+    paintTheme();
+  }
+
+  themeBtn.addEventListener('click', function () {
+    setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+  });
+
+  function isNarrow() { return window.innerWidth <= 720; }
+
+  function setSidebarCollapsed(collapsed, persist) {
+    state.sbCollapsed = collapsed;
+    app.classList.toggle('sb-collapsed', collapsed && !isNarrow());
+    if (persist) localStorage.setItem(K_SB, collapsed ? '1' : '0');
+  }
+
+  function toggleSidebar() {
+    if (isNarrow()) {
+      if (app.classList.contains('drawer')) closeSidebar();
+      else openSidebar();
+      return;
+    }
+    setSidebarCollapsed(!state.sbCollapsed, true);
+    if (!state.sbCollapsed) input.focus();
+  }
 
   /* ---------------- 消息渲染 ---------------- */
 
@@ -976,7 +1034,8 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   });
 
   document.getElementById('newBtn').addEventListener('click', newChat);
-  document.getElementById('menuBtn').addEventListener('click', openSidebar);
+  document.getElementById('menuBtn').addEventListener('click', toggleSidebar);
+  document.getElementById('sbToggle').addEventListener('click', toggleSidebar);
   backdrop.addEventListener('click', closeSidebar);
 
   /* ---------------- 设置 ---------------- */
@@ -1030,6 +1089,8 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
 
   loadAll();
   paintToggles();
+  paintTheme();
+  setSidebarCollapsed(state.sbCollapsed, false);
   renderConvList();
   renderCurrent();
   autoGrow();
@@ -1037,7 +1098,12 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   else input.focus();
 
   window.addEventListener('resize', function () {
-    if (window.innerWidth > 720) closeSidebar();
+    if (window.innerWidth > 720) {
+      closeSidebar();
+      setSidebarCollapsed(state.sbCollapsed, false);
+    } else {
+      app.classList.remove('sb-collapsed');
+    }
     scrollDown(false);
   });
 })();
