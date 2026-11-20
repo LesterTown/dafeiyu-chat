@@ -6,10 +6,11 @@
 
 ## 特点
 
-- **纯静态**：`index.html` + 几个图片，没有任何构建步骤和依赖，扔到任何静态托管上就能跑
+- **纯静态**：`index.html` + 图标 + 本地内置的 `vendor/pdf.js`，没有任何构建步骤，扔到任何静态托管上就能跑
 - **流式输出**：边生成边显示，不是等一串字再蹦出来
 - **深度思考**：输入框左边的开关，打开就切到 `deepseek-reasoner`，思考过程可以展开看
 - **联网搜索**：同一个开关栏，先搜网页再作答，回答里标 [1][2] 并附「参考 N 个网页」，走的是 DeepSeek 官方 Search 接口，用你自己的 Key 计费（每 1000 次成功搜索 5 元）
+- **带附件提问**：输入框左边的 ＋ 可以传图片（自动压到 1568px，最多 4 张）、PDF、Word（.docx）、txt/md/csv/json。PDF/Word 的文字是在浏览器本地抽出来的，不上传服务器；带图时自动切到支持看图的 `deepseek-flash`，单份文档最多取前 12000 字
 - **左侧历史会话**：所有对话分组留在左边，点一下就接着聊；右上角 ＋ 开新对话；左上角 « 可以把整个侧栏收起来，收起后顶栏会出现 ☰ 再展开（会记住你的选择）
 - **对话留在本地**：Key 和聊天记录只存在浏览器的 localStorage 里，刷新还在，关掉也不上传
 - **手机能用**：响应式布局，iOS/Android 浏览器打开即可；支持「添加到主屏幕」
@@ -95,6 +96,11 @@ DeepSeek 按用量扣费，普通聊天一天通常几毛钱。余额不足时�
 - 断点式极简 Markdown 渲染（代码块 / 标题 / 列表 / 粗体 / 行内代码 / 链接），内容一律先转义再渲染
 - 请求直接从浏览器发往 `https://api.deepseek.com/chat/completions`（官方接口允许跨域）
 - 联网搜索走 `POST https://api.deepseek.com/v1/tools/search`，同样允许跨域；搜索结果只在本轮塞进上下文，不写进聊天记录
+- 附件：图片用 canvas 压缩后转 base64 data URL，随消息以 `image_url` 形式发出（远程图片地址官方接口不认，必须内联）；`.docx` 用浏览器自带 `DecompressionStream('deflate-raw')` 解 ZIP 再抽 `word/document.xml` 的文字；PDF 用本地 `vendor/pdf.js` 逐页抽文字，并把 PDF 常见的康熙部首/兼容汉字（⽂、⻥ 等）还原成正常汉字
+
+## 第三方
+
+- `vendor/pdf.js`、`vendor/pdf.worker.min.js` 来自 [pdf.js](https://github.com/mozilla/pdf.js) 3.11.174，Apache-2.0 许可，只在你要读 PDF 时才加载
 
 ## 许可
 

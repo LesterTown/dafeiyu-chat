@@ -187,6 +187,17 @@ pre.code code{white-space:pre}
 }
 .composer-inner{max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:8px}
 .toggles{display:flex;gap:6px;flex:0 0 auto;padding-bottom:3px}
+.attach-btn{width:32px;height:32px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);
+  font-size:17px;line-height:1;cursor:pointer;padding:0}
+.attach-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tray{max-width:820px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;padding:0 12px 8px}
+.chip{display:flex;align-items:center;gap:7px;max-width:240px;padding:5px 7px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--line);font-size:12px;color:var(--text)}
+.chip img{width:30px;height:30px;object-fit:cover;border-radius:6px;display:block}
+.chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0}
+.chip .x:hover{color:var(--accent)}
 .toggle{
   padding:7px 10px;border-radius:14px;border:1px solid var(--line);
   background:transparent;color:var(--muted);font-size:12.5px;line-height:1;
@@ -322,8 +333,12 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
     </main>
 
     <footer class="composer">
+      <div class="tray" id="tray" hidden></div>
+      <input type="file" id="fileInput" multiple hidden
+        accept="image/*,.pdf,.docx,.txt,.md,.csv,.json,.log">
       <div class="composer-inner">
         <div class="toggles">
+          <button class="attach-btn" id="attachBtn" type="button" title="上传图片、PDF、Word、txt">＋</button>
           <button class="toggle" id="thinkBtn" type="button" aria-pressed="false" title="深度思考：先推理再作答，会显示思考过程">深度思考</button>
           <button class="toggle" id="searchBtn" type="button" aria-pressed="false" title="联网搜索：先搜网页，再带着资料回答">联网搜索</button>
         </div>
@@ -331,7 +346,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
         <button class="send" id="send" title="发送" aria-label="发送">↑</button>
         <button class="send stop" id="stop" title="停止" aria-label="停止" hidden>■</button>
       </div>
-      <p class="hint">Key 只存在本机浏览器里 · 请求直连 api.deepseek.com · 联网搜索用你自己的 Key，每 1000 次 5 元</p>
+      <p class="hint">Key 只存在本机浏览器里 · 请求直连 api.deepseek.com · 联网搜索用你自己的 Key，每 1000 次 5 元 · 带图时自动用 V4.1-Flash</p>
     </footer>
   </div>
 </div>
@@ -428,7 +443,8 @@ var K_THINK = 'xiaotong.think';
     convs: [],
     currentId: null,
     controller: null,
-    busy: false
+    busy: false,
+    atts: []
   };
 
   var app = document.getElementById('app');
@@ -549,6 +565,8 @@ var K_THINK = 'xiaotong.think';
       localStorage.setItem(K_DATA, JSON.stringify({
         convs: state.convs,
         currentId: state.currentId
+      }, function (k, v) {
+        return k === 'images' ? undefined : v;
       }));
     } catch (e) {}
   }
@@ -973,18 +991,281 @@ var K_THINK = 'xiaotong.think';
       + lines.join('\n\n');
   }
 
+  /* ---------------- 附件：图片 / PDF / Word / txt ---------------- */
+
+  var MAX_IMAGES = 4;
+  var MAX_TEXT_CHARS = 12000;
+
+  function renderTray() {
+    var tray = document.getElementById('tray');
+    if (!tray) return;
+    tray.innerHTML = '';
+    if (!state.atts.length) { tray.hidden = true; return; }
+    tray.hidden = false;
+    state.atts.forEach(function (a, i) {
+      var chip = document.createElement('div');
+      chip.className = 'chip';
+      if (a.kind === 'image') {
+        var img = document.createElement('img');
+        img.src = a.dataUrl;
+        img.alt = a.name;
+        chip.appendChild(img);
+      }
+      var nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = a.kind === 'image' ? a.name : a.name + ' · ' + a.chars + ' 字';
+      chip.appendChild(nm);
+      var x = document.createElement('button');
+      x.className = 'x';
+      x.type = 'button';
+      x.textContent = '×';
+      x.title = '移除';
+      x.addEventListener('click', function () {
+        state.atts.splice(i, 1);
+        renderTray();
+      });
+      chip.appendChild(x);
+      tray.appendChild(chip);
+    });
+  }
+
+  function clearAtts() {
+    state.atts = [];
+    renderTray();
+  }
+
+  function downscaleImage(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var max = 1568;
+        var scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        var cw = Math.max(1, Math.round(img.naturalWidth * scale));
+        var ch = Math.max(1, Math.round(img.naturalHeight * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error('图片读不出来'));
+      };
+      img.src = url;
+    });
+  }
+
+  function inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'undefined') {
+      return Promise.reject(new Error('这个浏览器太旧，读不了压缩文件'));
+    }
+    var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(stream).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+  }
+
+  async function unzipEntry(buffer, wanted) {
+    var view = new DataView(buffer);
+    var len = view.byteLength;
+    var eocd = -1;
+    for (var i = len - 22; i >= Math.max(0, len - 66000); i--) {
+      if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('不是标准的 docx 文件');
+    var count = view.getUint16(eocd + 10, true);
+    var p = view.getUint32(eocd + 16, true);
+    var decoder = new TextDecoder();
+    for (var n = 0; n < count; n++) {
+      if (view.getUint32(p, true) !== 0x02014b50) break;
+      var method = view.getUint16(p + 10, true);
+      var compSize = view.getUint32(p + 20, true);
+      var nameLen = view.getUint16(p + 28, true);
+      var extraLen = view.getUint16(p + 30, true);
+      var cmtLen = view.getUint16(p + 32, true);
+      var localOff = view.getUint32(p + 42, true);
+      var name = decoder.decode(new Uint8Array(buffer, p + 46, nameLen));
+      if (name === wanted) {
+        var lNameLen = view.getUint16(localOff + 26, true);
+        var lExtraLen = view.getUint16(localOff + 28, true);
+        var dataStart = localOff + 30 + lNameLen + lExtraLen;
+        var raw = new Uint8Array(buffer, dataStart, compSize);
+        if (method === 0) return raw;
+        return await inflateRaw(raw);
+      }
+      p += 46 + nameLen + extraLen + cmtLen;
+    }
+    throw new Error('文件里找不到正文，可能不是 Word 文档');
+  }
+
+  function decodeXml(xml) {
+    return xml
+      .replace(/<w:tab[^>]*\/>/g, '\t')
+      .replace(/<w:br[^>]*\/>/g, '\n')
+      .replace(/<\/w:p>/g, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;/g, '&');
+  }
+
+  async function extractDocx(file) {
+    var buf = await file.arrayBuffer();
+    var bytes = await unzipEntry(buf, 'word/document.xml');
+    return decodeXml(new TextDecoder().decode(bytes));
+  }
+
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = './vendor/pdf.min.js';
+      s.onload = function () {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = './vendor/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      };
+      s.onerror = function () { reject(new Error('PDF 解析库没加载上')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  /* PDF 里常见「康熙部首/兼容汉字」变体（如 ⽂ 与 文、⻥ 与 鱼），统一还原成正常汉字 */
+  var RADICAL_MAP = {
+    '\u2E80': '厂', '\u2E87': '几', '\u2E8C': '小', '\u2E8E': '兀', '\u2E90': '尢', '\u2E92': '巳',
+    '\u2E93': '幺', '\u2E94': '广', '\u2E95': '彐', '\u2E96': '心', '\u2E98': '手', '\u2E99': '攵',
+    '\u2E9B': '无', '\u2E9C': '日', '\u2E9D': '月', '\u2E9E': '歹', '\u2E9F': '母', '\u2EA0': '民',
+    '\u2EA1': '水', '\u2EA2': '水', '\u2EA3': '火', '\u2EA4': '爪', '\u2EA5': '爪', '\u2EA6': '丬',
+    '\u2EA7': '牛', '\u2EA8': '犬', '\u2EA9': '王', '\u2EAA': '疋', '\u2EAB': '罒', '\u2EAC': '示',
+    '\u2EAD': '示', '\u2EAE': '竹', '\u2EAF': '糸', '\u2EB0': '纟', '\u2EB1': '罒', '\u2EB2': '罒',
+    '\u2EB3': '网', '\u2EB4': '网', '\u2EB5': '网', '\u2EB6': '羊', '\u2EB7': '羊', '\u2EB8': '羊',
+    '\u2EB9': '老', '\u2EBA': '耂', '\u2EBB': '聿', '\u2EBC': '肉', '\u2EBD': '臼', '\u2EBE': '艹',
+    '\u2EBF': '艹', '\u2EC0': '艹', '\u2EC1': '虎', '\u2EC2': '衤', '\u2EC3': '襾', '\u2EC4': '西',
+    '\u2EC5': '见', '\u2EC6': '角', '\u2EC7': '言', '\u2EC8': '讠', '\u2EC9': '贝', '\u2ECA': '足',
+    '\u2ECB': '车', '\u2ECC': '辶', '\u2ECD': '辶', '\u2ECE': '辶', '\u2ECF': '阝', '\u2ED0': '阝',
+    '\u2ED1': '長', '\u2ED2': '镸', '\u2ED3': '长', '\u2ED4': '门', '\u2ED5': '阜', '\u2ED6': '阝',
+    '\u2ED7': '雨', '\u2ED8': '青', '\u2ED9': '韦', '\u2EDA': '页', '\u2EDB': '风', '\u2EDC': '飞',
+    '\u2EDD': '食', '\u2EDE': '饣', '\u2EDF': '食', '\u2EE0': '饣', '\u2EE1': '首', '\u2EE2': '马',
+    '\u2EE3': '骨', '\u2EE4': '鬼', '\u2EE5': '鱼', '\u2EE6': '鸟', '\u2EE7': '卤', '\u2EE8': '麦',
+    '\u2EE9': '黄', '\u2EEA': '黾', '\u2EEB': '斉', '\u2EEC': '齐', '\u2EED': '齿', '\u2EEE': '齿',
+    '\u2EEF': '龙', '\u2EF0': '龙', '\u2EF1': '麻', '\u2EF2': '亀', '\u2EF3': '龟'
+  };
+
+  function normalizeCjk(text) {
+    var out = '';
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      var cp = text.charCodeAt(i);
+      if (RADICAL_MAP[ch]) {
+        out += RADICAL_MAP[ch];
+      } else if ((cp >= 0x2F00 && cp <= 0x2FDF) || (cp >= 0xF900 && cp <= 0xFAFF)) {
+        out += ch.normalize('NFKC');
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  }
+
+  async function extractPdf(file) {
+    var lib = await loadPdfJs();
+    var buf = await file.arrayBuffer();
+    var pdf = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+    var pages = Math.min(pdf.numPages, 60);
+    var out = [];
+    for (var i = 1; i <= pages; i++) {
+      var page = await pdf.getPage(i);
+      var tc = await page.getTextContent();
+      out.push(tc.items.map(function (it) { return it.str; }).join(''));
+    }
+    return normalizeCjk(out.join('\n\n'));
+  }
+
+  async function extractTextFile(file) {
+    var name = (file.name || '').toLowerCase();
+    if (name.endsWith('.docx')) return extractDocx(file);
+    if (name.endsWith('.pdf')) return extractPdf(file);
+    if (name.endsWith('.doc')) throw new Error('请先另存为 .docx，旧的 .doc 读不了');
+    return file.text();
+  }
+
+  async function addFiles(files) {
+    var picked = Array.prototype.slice.call(files || []);
+    for (var i = 0; i < picked.length; i++) {
+      var f = picked[i];
+      if (!f) continue;
+      if (f.size > 25 * 1024 * 1024) {
+        addSystemNote('「' + f.name + '」超过 25MB，没加进来');
+        continue;
+      }
+      var isImage = /^image\//.test(f.type) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(f.name);
+      try {
+        if (isImage) {
+          var count = state.atts.filter(function (a) { return a.kind === 'image'; }).length;
+          if (count >= MAX_IMAGES) {
+            addSystemNote('一次最多带 ' + MAX_IMAGES + ' 张图');
+            continue;
+          }
+          var dataUrl = await downscaleImage(f);
+          state.atts.push({ kind: 'image', name: f.name || '图片', dataUrl: dataUrl });
+        } else {
+          var text = await extractTextFile(f);
+          text = (text || '').replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+          if (!text) {
+            addSystemNote('「' + f.name + '」里没读到文字，可能是扫描件或图片型 PDF');
+            continue;
+          }
+          var cut = false;
+          if (text.length > MAX_TEXT_CHARS) {
+            text = text.slice(0, MAX_TEXT_CHARS);
+            cut = true;
+          }
+          state.atts.push({ kind: 'text', name: f.name, text: text, chars: text.length });
+          if (cut) addSystemNote('「' + f.name + '」太长，只取了前 ' + MAX_TEXT_CHARS + ' 字');
+        }
+      } catch (err) {
+        addSystemNote('「' + (f.name || '文件') + '」读不了：' + (err && err.message ? err.message : err));
+      }
+    }
+    renderTray();
+  }
+
   async function send(text) {
     text = (text || '').trim();
-    if (!text || state.busy) return;
+    var atts = state.atts.slice();
+    if ((!text && !atts.length) || state.busy) return;
     if (!state.apiKey) { openSettings('第一次使用，先把 Key 填进来'); return; }
 
-    var conv = ensureConv(text);
+    var images = atts.filter(function (a) { return a.kind === 'image'; });
+    var docs = atts.filter(function (a) { return a.kind === 'text'; });
+
+    var apiText = text;
+    var displayText = text;
+    docs.forEach(function (d) {
+      apiText += (apiText ? '\n\n' : '') + '[文件：' + d.name + ']\n' + d.text;
+      displayText += (displayText ? '\n\n' : '') + '📎 ' + d.name + '（' + d.chars + ' 字）';
+    });
+    if (images.length) {
+      displayText += (displayText ? '\n\n' : '') + '🖼 ' + images.map(function (i) { return i.name; }).join('、');
+    }
+
+    var conv = ensureConv(displayText || atts[0].name || '附件');
     var isFirst = conv.messages.length === 0;
 
-    addUser(text);
+    addUser(displayText);
     input.value = '';
     autoGrow();
-    conv.messages.push({ role: 'user', content: text });
+    clearAtts();
+    conv.messages.push({
+      role: 'user',
+      content: apiText,
+      images: images.map(function (i) { return i.dataUrl; })
+    });
     if (isFirst) conv.title = titleOf(conv.messages);
     conv.updatedAt = Date.now();
     if (conv.title) chatTitle.textContent = conv.title;
@@ -1003,11 +1284,26 @@ var K_THINK = 'xiaotong.think';
     var searchBlock = '';
 
     var msgs = conv.messages.map(function (m) {
+      if (m.images && m.images.length) {
+        return {
+          role: m.role,
+          content: [{ type: 'text', text: m.content || '看看这个' }].concat(
+            m.images.map(function (u) {
+              return { type: 'image_url', image_url: { url: u } };
+            })
+          )
+        };
+      }
       return { role: m.role, content: m.content };
     });
+    /* 带图必须用支持图片输入的模型 */
+    var model = images.length ? 'deepseek-flash' : state.model;
 
     try {
-      if (state.search) {
+      if (state.search && !text) {
+        addSystemNote('这一轮只有附件，先不联网搜索');
+      }
+      if (state.search && text) {
         bot.setContent('正在联网搜索…', true);
         var results = [];
         try {
@@ -1038,7 +1334,7 @@ var K_THINK = 'xiaotong.think';
           'Authorization': 'Bearer ' + state.apiKey
         },
         body: JSON.stringify({
-          model: state.model,
+          model: model,
           stream: true,
           messages: msgs
         }),
@@ -1112,6 +1408,24 @@ var K_THINK = 'xiaotong.think';
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 160) + 'px';
   }
+
+  var attachBtn = document.getElementById('attachBtn');
+  var fileInput = document.getElementById('fileInput');
+  if (attachBtn && fileInput) {
+    attachBtn.addEventListener('click', function () { fileInput.click(); });
+    fileInput.addEventListener('change', function () {
+      addFiles(fileInput.files);
+      fileInput.value = '';
+    });
+  }
+
+  input.addEventListener('paste', function (e) {
+    var files = e.clipboardData && e.clipboardData.files;
+    if (files && files.length) {
+      e.preventDefault();
+      addFiles(files);
+    }
+  });
 
   input.addEventListener('input', autoGrow);
   input.addEventListener('keydown', function (e) {
