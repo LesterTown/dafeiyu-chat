@@ -878,7 +878,7 @@ var K_THINK = 'xiaotong.think';
     chatTitle.textContent = conv.title || '新对话';
     conv.messages.forEach(function (m) {
       if (m.role === 'user') {
-        addUser(m.content);
+        addUser(m.display || m.content);
       } else {
         var bot = addBot();
         if (m.reasoning) bot.setReasoning(m.reasoning);
@@ -1264,6 +1264,7 @@ var K_THINK = 'xiaotong.think';
     conv.messages.push({
       role: 'user',
       content: apiText,
+      display: displayText,
       images: images.map(function (i) { return i.dataUrl; })
     });
     if (isFirst) conv.title = titleOf(conv.messages);
