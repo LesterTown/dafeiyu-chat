@@ -18,7 +18,11 @@
 
 ## 直接用
 
-打开部署好的网址，点右上角 ⚙ 填入自己的 DeepSeek Key 就能聊。
+在线版：**<https://lestertown.github.io/dafeiyu-chat/>**
+
+打开后用右上角 ⚙ 填自己的 DeepSeek Key 就能聊，不需要注册任何账号。
+
+> 提示：`github.io` 在国内访问不稳定，打不开时可以本地打开 `index.html`，或自己部署一份。
 
 ## 自己部署（GitHub Pages，免费 5 分钟）
 
