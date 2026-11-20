@@ -24,6 +24,36 @@
 
 > 提示：`github.io` 在国内访问不稳定，打不开时可以本地打开 `index.html`，或自己部署一份。
 
+## 装成 App
+
+**安卓**：去 [Releases](https://github.com/LesterTown/dafeiyu-chat/releases) 下载最新的 `dafeiyu-chat-x.y.z.apk`，用手机打开安装。
+
+第一次装会提示「不允许安装未知来源应用」，按提示给浏览器开个权限再装一次就行。小米/华为/OPPO 可能提示「未经安全检测」，点「继续安装」。
+
+APK 里打包了完整的界面，断网也能打开，联网才能聊天。
+
+**iPhone / iPad**：苹果不允许从网页装 App，用 Safari 打开在线版，点底部「分享」→「添加到主屏幕」，桌面会出现一条鱼，点开是全屏的，跟 App 差不多。
+
+系统限制：这种装法拿不到推送通知，后台也会被系统回收，但聊天本身不受影响。
+
+## 自己打包安卓
+
+需要 JDK 17～21 和 Android SDK：
+
+```bash
+npm install
+npm run apk                     # 生成 android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+正式包用 `./gradlew assembleRelease`，签名配置放 `android/keystore.properties`（已在 `.gitignore` 里，不会提交）：
+
+```properties
+storeFile=/绝对路径/你的.jks
+storePassword=...
+keyAlias=...
+keyPassword=...
+```
+
 ## 自己部署（GitHub Pages，免费 5 分钟）
 
 1. Fork 这个仓库
