@@ -367,6 +367,13 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   var BALANCE_API = 'https://api.deepseek.com/user/balance';
   var URL_KEY = 'https://platform.deepseek.com/api_keys';
   var URL_TOPUP = 'https://platform.deepseek.com/top_up';
+  var SYSTEM_PROMPT = [
+    '你是「大肥鱼」，运行在开源网页客户端「大肥鱼对话版」里，底层模型由 DeepSeek 提供。',
+    '关键事实：使用者填的是自己的 DeepSeek API Key，请求直连官方接口，按 token 用量计费、费用由使用者自己付给 DeepSeek。',
+    '因此：你不是免费的，也没有「包月」「每日免费额度」「无限使用」这回事。被问到身份、收费、额度时，如实说明上面这几点。',
+    '不要说「我完全免费」，也不要自称 DeepSeek 官方 App 或官方助手——你是第三方客户端里的助手。',
+    '不确定的事实不要编造；回答默认用中文，简洁直接。'
+  ].join('\n');
   var K_SEARCH = 'xiaotong.search';
   var K_DATA = 'xiaotong.data.v2';
   var K_OLD = 'xiaotong.chat';
@@ -952,6 +959,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
     var usedSources = [];
     var controller = new AbortController();
     state.controller = controller;
+    var searchBlock = '';
 
     var msgs = conv.messages.map(function (m) {
       return { role: m.role, content: m.content };
@@ -972,10 +980,15 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
             return { title: r.title, url: r.url, site_name: r.site_name || '' };
           });
           bot.setSources(usedSources);
-          msgs.splice(msgs.length - 1, 0, { role: 'system', content: searchContext(results) });
+          searchBlock = searchContext(results);
         }
         bot.setContent('', true);
       }
+
+      msgs.unshift({
+        role: 'system',
+        content: SYSTEM_PROMPT + (searchBlock ? '\n\n' + searchBlock : '')
+      });
 
       var res = await fetch(API, {
         method: 'POST',
