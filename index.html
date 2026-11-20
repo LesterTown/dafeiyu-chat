@@ -11,17 +11,19 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <style>
 :root{
-  --bg:#f4f6f9; --panel:#ffffff; --text:#101418; --muted:#5f6b7a;
+  --bg:#f4f6f9; --panel:#ffffff; --side:#eef2f7; --text:#101418; --muted:#5f6b7a;
   --line:#e3e9f0; --accent:#1b5e9e; --accent-soft:#e9f1fa;
   --user-bg:#1b5e9e; --user-text:#ffffff;
   --code-bg:#0f172a; --code-text:#e6edf3; --shadow:0 1px 2px rgba(16,24,40,.06);
+  --hover:rgba(27,94,158,.08); --active:rgba(27,94,158,.14);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0d1117; --panel:#161b22; --text:#e6edf3; --muted:#8b949e;
+    --bg:#0d1117; --panel:#161b22; --side:#11161d; --text:#e6edf3; --muted:#8b949e;
     --line:#242c36; --accent:#4c9ff0; --accent-soft:#16263a;
     --user-bg:#1f6fb8; --user-text:#ffffff;
     --code-bg:#0a0f16; --code-text:#dce6f0; --shadow:none;
+    --hover:rgba(76,159,240,.10); --active:rgba(76,159,240,.18);
   }
 }
 *{box-sizing:border-box}
@@ -29,39 +31,65 @@ html,body{height:100%}
 body{
   margin:0;background:var(--bg);color:var(--text);
   font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
-  display:flex;flex-direction:column;overflow:hidden;
-  -webkit-text-size-adjust:100%;
+  overflow:hidden;-webkit-text-size-adjust:100%;
 }
 button{font:inherit;color:inherit;cursor:pointer}
 [hidden]{display:none !important}
 a{color:var(--accent)}
 
-/* 顶栏 */
+.app{display:flex;height:100%;}
+
+/* ---------- 左侧历史 ---------- */
+.sidebar{
+  flex:0 0 264px;width:264px;background:var(--side);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+  padding-top:env(safe-area-inset-top);
+}
+.sb-head{display:flex;align-items:center;gap:8px;padding:12px 12px 8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;flex:1;min-width:0}
+.brand img{width:24px;height:24px;border-radius:7px;display:block}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{
+  width:32px;height:32px;border-radius:9px;border:1px solid transparent;
+  background:transparent;display:inline-flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--muted);flex:0 0 auto;
+}
+.icon-btn:hover{background:var(--active);color:var(--accent)}
+.sb-list{flex:1;overflow-y:auto;padding:4px 8px 12px;min-height:0}
+.sb-group{font-size:11px;color:var(--muted);padding:10px 8px 4px;letter-spacing:.04em}
+.conv{
+  display:flex;align-items:center;gap:6px;padding:8px 9px;border-radius:9px;
+  cursor:pointer;user-select:none;color:var(--text);
+}
+.conv:hover{background:var(--hover)}
+.conv.active{background:var(--active)}
+.conv .t{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv .d{font-size:11px;color:var(--muted);flex:0 0 auto}
+.conv .x{
+  width:20px;height:20px;border-radius:6px;border:none;background:transparent;
+  color:var(--muted);font-size:14px;line-height:1;opacity:0;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+}
+.conv:hover .x{opacity:1}
+.conv .x:hover{background:rgba(192,57,43,.15);color:#c0392b}
+.sb-empty{color:var(--muted);font-size:12.5px;padding:14px 10px;line-height:1.7}
+
+.backdrop{display:none;position:fixed;inset:0;background:rgba(8,12,18,.45);z-index:40}
+
+/* ---------- 右侧主区 ---------- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
 .topbar{
-  flex:0 0 auto;display:flex;align-items:center;gap:12px;
-  padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;
+  padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));
   background:var(--panel);border-bottom:1px solid var(--line);
 }
-.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px}
-.brand img{width:26px;height:26px;border-radius:7px;display:block}
-.brand small{font-weight:400;color:var(--muted);font-size:12px;margin-left:2px}
-.topbar .spacer{flex:1}
-.chip{
-  display:inline-flex;align-items:center;gap:6px;
-  border:1px solid var(--line);background:var(--panel);
-  padding:6px 12px;border-radius:20px;font-size:13px;color:var(--text);
-  white-space:nowrap;
+.topbar .title{
+  font-size:14px;font-weight:500;color:var(--muted);flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.chip:hover{border-color:var(--accent);color:var(--accent)}
-.icon-btn{
-  width:34px;height:34px;border-radius:10px;border:1px solid transparent;
-  background:transparent;display:inline-flex;align-items:center;justify-content:center;
-  font-size:16px;color:var(--muted);
-}
-.icon-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.spacer{flex:0 0 0}
 
-/* 消息区 */
-main{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+main{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;min-height:0}
 .wrap{max-width:820px;margin:0 auto;padding:18px 14px 8px}
 
 .msg{display:flex;gap:10px;margin:0 0 16px}
@@ -74,16 +102,13 @@ main{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolli
 }
 .msg.user .bubble{
   background:var(--user-bg);color:var(--user-text);border-color:transparent;
-  border-bottom-right-radius:5px;
+  border-bottom-right-radius:5px;white-space:pre-wrap;
 }
 .msg.bot .bubble{border-bottom-left-radius:5px}
-.msg.bot .content,.msg.user .bubble{white-space:pre-wrap}
 .msg.bot .content{white-space:normal}
 .msg.bot .content h4{margin:14px 0 6px;font-size:15px}
 .msg.bot .content ul,.msg.bot .content ol{margin:6px 0;padding-left:22px}
 .msg.bot .content li{margin:2px 0}
-.msg.bot .content p{margin:0 0 10px}
-.msg.bot .content p:last-child{margin-bottom:0}
 code.inline{
   background:var(--accent-soft);color:var(--accent);
   padding:1px 5px;border-radius:5px;font-size:.92em;
@@ -101,11 +126,11 @@ pre.code code{white-space:pre}
   background:var(--accent-soft);border:1px dashed var(--line);
   font-size:13px;color:var(--muted);
 }
-.reason summary{cursor:pointer;color:var(--muted);font-weight:500}
+.reason summary{cursor:pointer;font-weight:500}
 .reason .reason-body{margin-top:8px;white-space:pre-wrap;line-height:1.6}
 
 .msg-tools{display:flex;gap:6px;margin-top:8px;opacity:0;transition:opacity .15s}
-.msg.bot:hover .msg-tools,.msg-tools.show{opacity:1}
+.msg.bot:hover .msg-tools{opacity:1}
 .mini{
   border:1px solid var(--line);background:transparent;color:var(--muted);
   font-size:12px;padding:3px 8px;border-radius:7px;
@@ -114,12 +139,9 @@ pre.code code{white-space:pre}
 
 .err{color:#c0392b;font-size:14px}
 @media (prefers-color-scheme: dark){.err{color:#ff7b72}}
-.cursor::after{
-  content:"▌";color:var(--accent);animation:blink 1s steps(1) infinite;
-}
+.cursor::after{content:"▌";color:var(--accent);animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 
-/* 欢迎页 */
 .hello{max-width:640px;margin:0 auto;padding:26px 18px}
 .hello img{width:54px;height:54px;border-radius:14px}
 .hello h1{font-size:22px;margin:16px 0 8px}
@@ -131,14 +153,34 @@ pre.code code{white-space:pre}
 }
 .sug:hover{border-color:var(--accent);color:var(--accent)}
 
-/* 输入区 */
 .composer{
   flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);
   padding:10px 14px calc(10px + env(safe-area-inset-bottom));
 }
-.composer-inner{
-  max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:8px;
+.composer-inner{max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:8px}
+.toggles{display:flex;gap:6px;flex:0 0 auto;padding-bottom:3px}
+.toggle{
+  padding:7px 10px;border-radius:14px;border:1px solid var(--line);
+  background:transparent;color:var(--muted);font-size:12.5px;line-height:1;
+  white-space:nowrap;
 }
+.toggle:hover{border-color:var(--accent);color:var(--accent)}
+.toggle[aria-pressed="true"]{
+  background:color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color:var(--accent);color:var(--accent);font-weight:600;
+}
+@media (max-width:560px){
+  .toggle{padding:6px 8px;font-size:11.5px}
+}
+.sources{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;font-size:12.5px;color:var(--muted)}
+.sources summary{cursor:pointer;user-select:none}
+.sources ol{margin:8px 0 0;padding-left:18px}
+.sources li{margin:4px 0}
+.sources a{color:var(--accent);text-decoration:none}
+.sources a:hover{text-decoration:underline}
+.sources .src{color:var(--muted);font-size:11.5px}
+.oli{display:flex;gap:7px;margin:3px 0}
+.oli .onum{flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums}
 textarea#input{
   flex:1;resize:none;border:1px solid var(--line);background:var(--bg);
   border-radius:20px;padding:11px 14px;font:inherit;color:var(--text);
@@ -152,12 +194,8 @@ textarea#input:focus{border-color:var(--accent)}
 }
 .send:disabled{opacity:.45;cursor:default}
 .stop{background:#c0392b}
-.hint{
-  max-width:820px;margin:6px auto 0;font-size:11.5px;color:var(--muted);
-  text-align:center;
-}
+.hint{max-width:820px;margin:6px auto 0;font-size:11.5px;color:var(--muted);text-align:center}
 
-/* 设置弹窗 */
 dialog{
   border:none;border-radius:16px;padding:0;background:var(--panel);color:var(--text);
   width:min(440px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.25);
@@ -176,60 +214,82 @@ dialog::backdrop{background:rgba(8,12,18,.45)}
 .row{display:flex;gap:8px;align-items:center}
 .row .grow{flex:1}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
-.btn{
-  padding:9px 16px;border-radius:10px;border:1px solid var(--line);
-  background:transparent;font-size:14px;
-}
+.btn{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:transparent;font-size:14px}
 .btn.primary{background:var(--accent);color:#fff;border-color:transparent}
 .btn.primary:hover{filter:brightness(1.06)}
 .btn.danger{color:#c0392b;border-color:#e6b8b3}
-.dlg .note{
-  margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6;
-  background:var(--accent-soft);border-radius:10px;padding:10px 12px;
+.dlg .note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6;background:var(--accent-soft);border-radius:10px;padding:10px 12px}
+select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+
+/* ---------- 窄屏：侧栏变抽屉 ---------- */
+@media (max-width:720px){
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;z-index:50;width:270px;
+    transform:translateX(-100%);transition:transform .2s ease;
+    box-shadow:0 0 40px rgba(0,0,0,.18);
+  }
+  .app.drawer .sidebar{transform:translateX(0)}
+  .app.drawer .backdrop{display:block}
+  .topbar .title{text-align:center}
 }
-select{
-  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
-  background:var(--bg);color:var(--text);font:inherit;
+@media (min-width:721px){
+  #menuBtn{display:none}
 }
 </style>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand"><img src="./icon-192.png" alt="">小通 <small>自带 Key</small></div>
-  <div class="spacer"></div>
-  <button class="chip" id="modelBtn" title="切换模型">快速</button>
-  <button class="icon-btn" id="newBtn" title="新对话" aria-label="新对话">＋</button>
-  <button class="icon-btn" id="keyBtn" title="设置" aria-label="设置">⚙</button>
-</header>
+<div class="app" id="app">
 
-<main id="scroller">
-  <div class="wrap" id="list"></div>
-  <section class="hello" id="hello">
-    <img src="./icon-192.png" alt="">
-    <h1>我是小通</h1>
-    <p>用你自己的 DeepSeek Key 直连官方接口：没有每日次数限制，对话不经过任何中转服务器，也不会被任何人看到。</p>
-    <div class="sugs" id="sugs">
-      <button class="sug" data-q="用三句话解释一下什么是复利">用三句话解释一下什么是复利</button>
-      <button class="sug" data-q="帮我把这句话写得更正式：老板我明天想请个假">帮我把这句话写得更正式：老板我明天想请个假</button>
-      <button class="sug" data-q="普通人学什么技能不容易被 AI 替代？">普通人学什么技能不容易被 AI 替代？</button>
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="brand"><img src="./icon-192.png" alt=""><span>小通</span></div>
     </div>
-  </section>
-</main>
+    <div class="sb-list" id="convList"></div>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
 
-<footer class="composer">
-  <div class="composer-inner">
-    <textarea id="input" rows="1" placeholder="问点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
-    <button class="send" id="send" title="发送" aria-label="发送">↑</button>
-    <button class="send stop" id="stop" title="停止" aria-label="停止" hidden>■</button>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" id="menuBtn" title="历史对话" aria-label="历史对话">☰</button>
+      <div class="title" id="chatTitle">新对话</div>
+      <button class="icon-btn" id="newBtn" title="新对话" aria-label="新对话">＋</button>
+      <button class="icon-btn" id="keyBtn" title="设置" aria-label="设置">⚙</button>
+    </header>
+
+    <main id="scroller">
+      <div class="wrap" id="list"></div>
+      <section class="hello" id="hello">
+        <img src="./icon-192.png" alt="">
+        <h1>我是小通</h1>
+        <p>用你自己的 DeepSeek Key 直连官方接口：没有每日次数限制，对话不经过任何中转服务器，也不会被任何人看到。</p>
+        <div class="sugs" id="sugs">
+          <button class="sug" data-q="用三句话解释一下什么是复利">用三句话解释一下什么是复利</button>
+          <button class="sug" data-q="帮我把这句话写得更正式：老板我明天想请个假">帮我把这句话写得更正式：老板我明天想请个假</button>
+          <button class="sug" data-q="普通人学什么技能不容易被 AI 替代？">普通人学什么技能不容易被 AI 替代？</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="composer">
+      <div class="composer-inner">
+        <div class="toggles">
+          <button class="toggle" id="thinkBtn" type="button" aria-pressed="false" title="深度思考：先推理再作答，会显示思考过程">深度思考</button>
+          <button class="toggle" id="searchBtn" type="button" aria-pressed="false" title="联网搜索：先搜网页，再带着资料回答">联网搜索</button>
+        </div>
+        <textarea id="input" rows="1" placeholder="问点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button class="send" id="send" title="发送" aria-label="发送">↑</button>
+        <button class="send stop" id="stop" title="停止" aria-label="停止" hidden>■</button>
+      </div>
+      <p class="hint">Key 只存在本机浏览器里 · 请求直连 api.deepseek.com · 联网搜索用你自己的 Key，每 1000 次 5 元</p>
+    </footer>
   </div>
-  <p class="hint">Key 只存在本机浏览器里 · 请求直连 api.deepseek.com</p>
-</footer>
+</div>
 
 <dialog id="settings">
   <div class="dlg">
     <h2>设置</h2>
-    <p class="sub">Key 只保存在这台设备的浏览器里，不会上传到任何地方。</p>
+    <p class="sub">每个使用者填自己的 Key。它只保存在这台设备的浏览器里，不会上传到任何地方。</p>
 
     <label class="field">
       <span>DeepSeek API Key</span>
@@ -239,17 +299,9 @@ select{
       </div>
     </label>
 
-    <label class="field">
-      <span>默认模型</span>
-      <select id="modelSelect">
-        <option value="deepseek-chat">普通对话 · 快</option>
-        <option value="deepseek-reasoner">深度思考 · 更稳（会显示思考过程）</option>
-      </select>
-    </label>
-
     <div class="note">
       怎么拿 Key：打开 platform.deepseek.com 登录 → 左侧「API Keys」→ 创建 → 复制 sk- 开头那串。<br>
-      DeepSeek 按用量扣费，普通聊天一天通常几毛钱。
+      DeepSeek 按用量扣费，普通聊天一天通常几毛钱，费用由你自己付给 DeepSeek。
     </div>
 
     <div class="dlg-actions">
@@ -265,31 +317,42 @@ select{
   'use strict';
 
   var API = 'https://api.deepseek.com/chat/completions';
+  var SEARCH_API = 'https://api.deepseek.com/v1/tools/search';
   var K_KEY = 'xiaotong.apiKey';
   var K_MODEL = 'xiaotong.model';
-  var K_CHAT = 'xiaotong.chat';
-  var MODELS = { 'deepseek-chat': '快速', 'deepseek-reasoner': '深度思考' };
+  var K_THINK = 'xiaotong.think';
+  var K_SEARCH = 'xiaotong.search';
+  var K_DATA = 'xiaotong.data.v2';
+  var K_OLD = 'xiaotong.chat';
 
   var state = {
     apiKey: localStorage.getItem(K_KEY) || '',
     model: localStorage.getItem(K_MODEL) || 'deepseek-chat',
-    messages: [],
+    think: localStorage.getItem(K_THINK) === '1' || localStorage.getItem(K_MODEL) === 'deepseek-reasoner',
+    search: localStorage.getItem(K_SEARCH) === '1',
+    convs: [],
+    currentId: null,
     controller: null,
     busy: false
   };
 
+  var app = document.getElementById('app');
   var list = document.getElementById('list');
   var hello = document.getElementById('hello');
   var scroller = document.getElementById('scroller');
   var input = document.getElementById('input');
   var sendBtn = document.getElementById('send');
   var stopBtn = document.getElementById('stop');
-  var modelBtn = document.getElementById('modelBtn');
+  var thinkBtn = document.getElementById('thinkBtn');
+  var searchBtn = document.getElementById('searchBtn');
+  var chatTitle = document.getElementById('chatTitle');
+  var convList = document.getElementById('convList');
   var dialog = document.getElementById('settings');
   var keyInput = document.getElementById('keyInput');
-  var modelSelect = document.getElementById('modelSelect');
 
-  /* ---------- 工具 ---------- */
+  var backdrop = document.getElementById('backdrop');
+
+  /* ---------------- 工具 ---------------- */
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -305,7 +368,6 @@ select{
         '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
   }
 
-  // 极简 markdown：代码块、标题、列表、粗体、行内代码、链接。
   function render(text) {
     var out = '';
     var inCode = false, codeBuf = '', listType = null;
@@ -315,14 +377,12 @@ select{
     }
 
     text.split('\n').forEach(function (line) {
-      var fence = /^```([\w+-]*)\s*$/.exec(line);
+      var fence = /^```[\w+-]*\s*$/.exec(line);
       if (fence) {
         if (inCode) {
           out += '<pre class="code"><code>' + esc(codeBuf.replace(/\n$/, '')) + '</code></pre>';
           codeBuf = ''; inCode = false;
-        } else {
-          closeList(); inCode = true;
-        }
+        } else { closeList(); inCode = true; }
         return;
       }
       if (inCode) { codeBuf += line + '\n'; return; }
@@ -332,10 +392,15 @@ select{
 
       var li = /^\s*[-*]\s+(.*)$/.exec(line);
       var ol = /^\s*(\d+)[.)]\s+(.*)$/.exec(line);
-      if (li || ol) {
-        var type = ol ? 'ol' : 'ul';
-        if (listType !== type) { closeList(); out += '<' + type + '>'; listType = type; }
-        out += '<li>' + inline(li ? li[1] : ol[2]) + '</li>';
+      if (ol) {
+        // 保留模型原来的编号，避免 1.2.3. 每段都从 1 开始
+        closeList();
+        out += '<div class="oli"><span class="onum">' + ol[1] + '.</span><span>' + inline(ol[2]) + '</span></div>';
+        return;
+      }
+      if (li) {
+        if (listType !== 'ul') { closeList(); out += '<ul>'; listType = 'ul'; }
+        out += '<li>' + inline(li[1]) + '</li>';
         return;
       }
       closeList();
@@ -356,15 +421,178 @@ select{
     if (force || nearBottom()) scroller.scrollTop = scroller.scrollHeight;
   }
 
-  function saveChat() {
-    try { localStorage.setItem(K_CHAT, JSON.stringify(state.messages)); } catch (e) {}
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  function showHello(show) {
-    hello.style.display = show ? '' : 'none';
+  function fmtTime(ts) {
+    var d = new Date(ts), now = new Date();
+    function same(a, b) { return a.toDateString() === b.toDateString(); }
+    var hh = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    if (same(d, now)) return hh;
+    var y = new Date(now); y.setDate(now.getDate() - 1);
+    if (same(d, y)) return '昨天';
+    if (d.getFullYear() === now.getFullYear()) return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
   }
 
-  /* ---------- 消息渲染 ---------- */
+  function groupOf(ts) {
+    var d = new Date(ts), now = new Date();
+    if (d.toDateString() === now.toDateString()) return '今天';
+    var y = new Date(now); y.setDate(now.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return '昨天';
+    if (now - d < 7 * 864e5) return '最近 7 天';
+    return '更早';
+  }
+
+  /* ---------------- 存取 ---------------- */
+
+  function saveAll() {
+    try {
+      localStorage.setItem(K_DATA, JSON.stringify({
+        convs: state.convs,
+        currentId: state.currentId
+      }));
+    } catch (e) {}
+  }
+
+  function loadAll() {
+    var raw = localStorage.getItem(K_DATA);
+    if (raw) {
+      try {
+        var obj = JSON.parse(raw);
+        if (obj && Array.isArray(obj.convs)) {
+          state.convs = obj.convs.filter(function (c) { return c && c.id && Array.isArray(c.messages); });
+          state.currentId = obj.currentId || (state.convs[0] && state.convs[0].id) || null;
+          return;
+        }
+      } catch (e) {}
+    }
+    // 从旧版的单会话数据迁移
+    var old = localStorage.getItem(K_OLD);
+    if (!old) return;
+    try {
+      var msgs = JSON.parse(old);
+      if (!Array.isArray(msgs) || !msgs.length) return;
+      var conv = {
+        id: uid(),
+        title: titleOf(msgs),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: msgs
+      };
+      state.convs = [conv];
+      state.currentId = conv.id;
+      saveAll();
+      localStorage.removeItem(K_OLD);
+    } catch (e) {}
+  }
+
+  function titleOf(messages) {
+    var first = (messages || []).filter(function (m) { return m.role === 'user'; })[0];
+    var t = first ? String(first.content).replace(/\s+/g, ' ').trim() : '新对话';
+    if (!t) t = '新对话';
+    return t.length > 22 ? t.slice(0, 22) + '…' : t;
+  }
+
+  function currentConv() {
+    if (!state.currentId) return null;
+    return state.convs.filter(function (c) { return c.id === state.currentId; })[0] || null;
+  }
+
+  function ensureConv(firstText) {
+    var conv = currentConv();
+    if (!conv) {
+      conv = {
+        id: uid(),
+        title: titleOf([{ role: 'user', content: firstText }]),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: []
+      };
+      state.convs.unshift(conv);
+      state.currentId = conv.id;
+    }
+    return conv;
+  }
+
+  /* ---------------- 侧栏 ---------------- */
+
+  function renderConvList() {
+    convList.innerHTML = '';
+    if (!state.convs.length) {
+      var empty = document.createElement('div');
+      empty.className = 'sb-empty';
+      empty.textContent = '还没有对话。点右上角「＋」开始，聊过的会自动存在这里。';
+      convList.appendChild(empty);
+      return;
+    }
+
+    var groups = [];
+    var sorted = state.convs.slice().sort(function (a, b) {
+      return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+    });
+    sorted.forEach(function (c) {
+      var g = groupOf(c.updatedAt || c.createdAt || Date.now());
+      var last = groups[groups.length - 1];
+      if (!last || last.name !== g) { last = { name: g, items: [] }; groups.push(last); }
+      last.items.push(c);
+    });
+
+    groups.forEach(function (g) {
+      var head = document.createElement('div');
+      head.className = 'sb-group';
+      head.textContent = g.name;
+      convList.appendChild(head);
+
+      g.items.forEach(function (c) {
+        var row = document.createElement('div');
+        row.className = 'conv' + (c.id === state.currentId ? ' active' : '');
+        row.dataset.id = c.id;
+
+        var t = document.createElement('div');
+        t.className = 't';
+        t.textContent = c.title || '新对话';
+
+        var d = document.createElement('div');
+        d.className = 'd';
+        d.textContent = fmtTime(c.updatedAt || c.createdAt || Date.now());
+
+        var x = document.createElement('button');
+        x.className = 'x';
+        x.textContent = '×';
+        x.title = '删除这段对话';
+        x.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          deleteConv(c.id);
+        });
+
+        row.appendChild(t);
+        row.appendChild(d);
+        row.appendChild(x);
+        row.addEventListener('click', function () { openConv(c.id); });
+        convList.appendChild(row);
+      });
+    });
+  }
+
+  function deleteConv(id) {
+    var conv = state.convs.filter(function (c) { return c.id === id; })[0];
+    if (!conv) return;
+    if (!confirm('删除「' + (conv.title || '新对话') + '」？删掉就找不回来了。')) return;
+    state.convs = state.convs.filter(function (c) { return c.id !== id; });
+    if (state.currentId === id) {
+      state.currentId = state.convs[0] ? state.convs[0].id : null;
+      renderCurrent();
+    }
+    saveAll();
+    renderConvList();
+  }
+
+  function openSidebar() { app.classList.add('drawer'); }
+  function closeSidebar() { app.classList.remove('drawer'); }
+
+  /* ---------------- 消息渲染 ---------------- */
 
   function addUser(text) {
     var el = document.createElement('article');
@@ -406,6 +634,15 @@ select{
     content.className = 'content';
     b.appendChild(content);
 
+    var sources = document.createElement('details');
+    sources.className = 'sources';
+    sources.hidden = true;
+    var sourcesSummary = document.createElement('summary');
+    var sourcesList = document.createElement('ol');
+    sources.appendChild(sourcesSummary);
+    sources.appendChild(sourcesList);
+    b.appendChild(sources);
+
     var tools = document.createElement('div');
     tools.className = 'msg-tools';
     var copyBtn = document.createElement('button');
@@ -426,12 +663,9 @@ select{
     scrollDown(true);
 
     return {
-      el: el,
-      content: content,
-      reasonBody: reasonBody,
       setReasoning: function (t) {
         reason.hidden = false;
-        reason.open = true;
+        if (t) { reason.open = true; }
         reasonBody.textContent = t;
       },
       setContent: function (t, streaming) {
@@ -439,13 +673,87 @@ select{
         content.innerHTML = render(t) + (streaming ? '<span class="cursor"></span>' : '');
         scrollDown(false);
       },
+      setSources: function (items) {
+        if (!items || !items.length) { sources.hidden = true; return; }
+        sourcesList.innerHTML = '';
+        items.forEach(function (r) {
+          var li = document.createElement('li');
+          var a = document.createElement('a');
+          a.href = r.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = r.title || r.url;
+          li.appendChild(a);
+          if (r.site_name) {
+            var sp = document.createElement('span');
+            sp.className = 'src';
+            sp.textContent = ' ' + r.site_name;
+            li.appendChild(sp);
+          }
+          sourcesList.appendChild(li);
+        });
+        sourcesSummary.textContent = '参考 ' + items.length + ' 个网页';
+        sources.hidden = false;
+      },
       error: function (msg) {
         content.innerHTML = '<div class="err">' + esc(msg) + '</div>';
       }
     };
   }
 
-  /* ---------- 发送 ---------- */
+  function showHello(show) {
+    hello.style.display = show ? '' : 'none';
+  }
+
+  function renderCurrent() {
+    list.innerHTML = '';
+    var conv = currentConv();
+    if (!conv || !conv.messages.length) {
+      showHello(true);
+      chatTitle.textContent = '新对话';
+      renderConvList();
+      return;
+    }
+    showHello(false);
+    chatTitle.textContent = conv.title || '新对话';
+    conv.messages.forEach(function (m) {
+      if (m.role === 'user') {
+        addUser(m.content);
+      } else {
+        var bot = addBot();
+        if (m.reasoning) bot.setReasoning(m.reasoning);
+        bot.setContent(m.content || '', false);
+        if (m.sources && m.sources.length) bot.setSources(m.sources);
+      }
+    });
+    renderConvList();
+    scrollDown(true);
+  }
+
+  function openConv(id) {
+    if (state.busy && state.controller) state.controller.abort();
+    state.currentId = id;
+    saveAll();
+    renderCurrent();
+    closeSidebar();
+    input.focus();
+  }
+
+  function newChat() {
+    if (state.busy && state.controller) state.controller.abort();
+    state.currentId = null;
+    list.innerHTML = '';
+    showHello(true);
+    chatTitle.textContent = '新对话';
+    input.value = '';
+    autoGrow();
+    saveAll();
+    renderConvList();
+    closeSidebar();
+    input.focus();
+  }
+
+  /* ---------------- 发送 ---------------- */
 
   function setBusy(busy) {
     state.busy = busy;
@@ -468,15 +776,49 @@ select{
     return '请求失败（HTTP ' + res.status + '）';
   }
 
+  async function webSearch(question, signal) {
+    var q = question.replace(/\s+/g, ' ').trim().slice(0, 128);
+    var res = await fetch(SEARCH_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + state.apiKey
+      },
+      body: JSON.stringify({ query: q, ori_question: q, count: 6, need_content: false }),
+      signal: signal
+    });
+    if (!res.ok) throw new Error(await describeError(res));
+    var data = await res.json();
+    return Array.isArray(data.results) ? data.results : [];
+  }
+
+  function searchContext(results) {
+    var lines = results.map(function (r, i) {
+      var src = r.site_name ? '｜' + r.site_name : '';
+      return '[' + (i + 1) + '] ' + (r.title || '') + src + '\n' + (r.summary || r.snippet || '') + '\n' + r.url;
+    });
+    return '下面是刚刚联网搜索到的网页资料（按相关度排序）。请优先依据这些资料回答，'
+      + '在用到的地方用 [1][2] 这样的编号标注来源；资料没覆盖的部分直接说明，不要编造。\n\n'
+      + lines.join('\n\n');
+  }
+
   async function send(text) {
     text = (text || '').trim();
     if (!text || state.busy) return;
-    if (!state.apiKey) { openSettings('先填一个 DeepSeek Key 才能开聊'); return; }
+    if (!state.apiKey) { openSettings('第一次使用，先把 Key 填进来'); return; }
+
+    var conv = ensureConv(text);
+    var isFirst = conv.messages.length === 0;
 
     addUser(text);
     input.value = '';
     autoGrow();
-    state.messages.push({ role: 'user', content: text });
+    conv.messages.push({ role: 'user', content: text });
+    if (isFirst) conv.title = titleOf(conv.messages);
+    conv.updatedAt = Date.now();
+    if (conv.title) chatTitle.textContent = conv.title;
+    renderConvList();
+    saveAll();
 
     var bot = addBot();
     bot.setContent('', true);
@@ -484,10 +826,34 @@ select{
 
     var answer = '';
     var reasoning = '';
+    var usedSources = [];
     var controller = new AbortController();
     state.controller = controller;
 
+    var msgs = conv.messages.map(function (m) {
+      return { role: m.role, content: m.content };
+    });
+
     try {
+      if (state.search) {
+        bot.setContent('正在联网搜索…', true);
+        var results = [];
+        try {
+          results = await webSearch(text, controller.signal);
+        } catch (searchErr) {
+          if (searchErr && searchErr.name === 'AbortError') throw searchErr;
+          addSystemNote('联网搜索没成功，这一轮改用模型自己的知识回答');
+        }
+        if (results.length) {
+          usedSources = results.map(function (r) {
+            return { title: r.title, url: r.url, site_name: r.site_name || '' };
+          });
+          bot.setSources(usedSources);
+          msgs.splice(msgs.length - 1, 0, { role: 'system', content: searchContext(results) });
+        }
+        bot.setContent('', true);
+      }
+
       var res = await fetch(API, {
         method: 'POST',
         headers: {
@@ -497,9 +863,7 @@ select{
         body: JSON.stringify({
           model: state.model,
           stream: true,
-          messages: state.messages.map(function (m) {
-            return { role: m.role, content: m.content };
-          })
+          messages: msgs
         }),
         signal: controller.signal
       });
@@ -537,22 +901,24 @@ select{
       }
 
       bot.setContent(answer, false);
-      state.messages.push({ role: 'assistant', content: answer });
+      conv.messages.push({ role: 'assistant', content: answer, reasoning: reasoning, sources: usedSources });
+      conv.updatedAt = Date.now();
     } catch (err) {
       if (err && err.name === 'AbortError') {
         answer = answer || '（已停止）';
         bot.setContent(answer, false);
-        state.messages.push({ role: 'assistant', content: answer });
+        conv.messages.push({ role: 'assistant', content: answer, reasoning: reasoning, sources: usedSources });
+        conv.updatedAt = Date.now();
       } else {
         bot.error((err && err.message) || String(err));
-        // 失败时把这轮的用户消息留在界面上，但不进上下文，避免污染后续对话
-        state.messages.pop();
+        conv.messages.pop(); // 失败的用户消息不留在上下文里
         addSystemNote('这轮没发出去，可以重试');
       }
     } finally {
       state.controller = null;
       setBusy(false);
-      saveChat();
+      saveAll();
+      renderConvList();
     }
   }
 
@@ -563,7 +929,7 @@ select{
     list.appendChild(p);
   }
 
-  /* ---------- 输入框 ---------- */
+  /* ---------------- 输入框 ---------------- */
 
   function autoGrow() {
     input.style.height = 'auto';
@@ -588,34 +954,37 @@ select{
     send(btn.dataset.q);
   });
 
-  /* ---------- 顶栏 ---------- */
+  /* ---------------- 顶栏 / 侧栏按钮 ---------------- */
 
-  function paintModel() {
-    modelBtn.textContent = MODELS[state.model] || '快速';
+  function paintToggles() {
+    state.model = state.think ? 'deepseek-reasoner' : 'deepseek-chat';
+    localStorage.setItem(K_MODEL, state.model);
+    thinkBtn.setAttribute('aria-pressed', state.think ? 'true' : 'false');
+    searchBtn.setAttribute('aria-pressed', state.search ? 'true' : 'false');
   }
 
-  modelBtn.addEventListener('click', function () {
-    state.model = state.model === 'deepseek-reasoner' ? 'deepseek-chat' : 'deepseek-reasoner';
-    localStorage.setItem(K_MODEL, state.model);
-    paintModel();
+  thinkBtn.addEventListener('click', function () {
+    state.think = !state.think;
+    localStorage.setItem(K_THINK, state.think ? '1' : '0');
+    paintToggles();
   });
 
-  document.getElementById('newBtn').addEventListener('click', function () {
-    if (state.busy && state.controller) state.controller.abort();
-    state.messages = [];
-    list.innerHTML = '';
-    showHello(true);
-    saveChat();
-    input.focus();
+  searchBtn.addEventListener('click', function () {
+    state.search = !state.search;
+    localStorage.setItem(K_SEARCH, state.search ? '1' : '0');
+    paintToggles();
   });
 
-  /* ---------- 设置 ---------- */
+  document.getElementById('newBtn').addEventListener('click', newChat);
+  document.getElementById('menuBtn').addEventListener('click', openSidebar);
+  backdrop.addEventListener('click', closeSidebar);
+
+  /* ---------------- 设置 ---------------- */
 
   function openSettings(message) {
     keyInput.value = state.apiKey;
-    modelSelect.value = state.model;
     dialog.showModal();
-    if (message) keyInput.placeholder = message;
+    keyInput.placeholder = message || 'sk-...';
     setTimeout(function () { keyInput.focus(); }, 30);
   }
 
@@ -632,59 +1001,45 @@ select{
   document.getElementById('saveBtn').addEventListener('click', function () {
     var key = keyInput.value.trim();
     if (!key) { keyInput.focus(); return; }
-    if (key.indexOf('sk-') !== 0) { keyInput.placeholder = 'DeepSeek 的 Key 一般以 sk- 开头'; keyInput.value = ''; keyInput.focus(); return; }
+    if (key.indexOf('sk-') !== 0) {
+      keyInput.placeholder = 'DeepSeek 的 Key 一般以 sk- 开头';
+      keyInput.value = '';
+      keyInput.focus();
+      return;
+    }
     state.apiKey = key;
-    state.model = modelSelect.value;
     localStorage.setItem(K_KEY, key);
-    localStorage.setItem(K_MODEL, state.model);
-    paintModel();
     dialog.close();
     input.focus();
   });
 
   document.getElementById('clearBtn').addEventListener('click', function () {
-    if (!confirm('清除本机的 Key 和聊天记录？此操作不可撤销。')) return;
+    if (!confirm('清除本机的 Key 和全部对话记录？此操作不可撤销。')) return;
     localStorage.removeItem(K_KEY);
-    localStorage.removeItem(K_CHAT);
+    localStorage.removeItem(K_DATA);
+    localStorage.removeItem(K_OLD);
     state.apiKey = '';
-    state.messages = [];
-    list.innerHTML = '';
-    showHello(true);
+    state.convs = [];
+    state.currentId = null;
+    renderCurrent();
+    renderConvList();
     dialog.close();
   });
 
-  /* ---------- 恢复上次对话 ---------- */
+  /* ---------------- 启动 ---------------- */
 
-  function restore() {
-    var raw = localStorage.getItem(K_CHAT);
-    if (!raw) return;
-    var saved;
-    try { saved = JSON.parse(raw); } catch (e) { return; }
-    if (!Array.isArray(saved) || !saved.length) return;
-    state.messages = saved.filter(function (m) {
-      return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
-    });
-    if (!state.messages.length) return;
-    state.messages.forEach(function (m) {
-      if (m.role === 'user') {
-        addUser(m.content);
-      } else {
-        var bot = addBot();
-        bot.setContent(m.content, false);
-      }
-    });
-    scrollDown(true);
-  }
-
-  /* ---------- 启动 ---------- */
-
-  paintModel();
-  restore();
+  loadAll();
+  paintToggles();
+  renderConvList();
+  renderCurrent();
   autoGrow();
   if (!state.apiKey) openSettings('第一次使用，先把 Key 填进来');
   else input.focus();
 
-  window.addEventListener('resize', function () { scrollDown(false); });
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 720) closeSidebar();
+    scrollDown(false);
+  });
 })();
 </script>
 </body>
