@@ -224,6 +224,21 @@ dialog::backdrop{background:rgba(8,12,18,.45)}
 .field input:focus{border-color:var(--accent)}
 .row{display:flex;gap:8px;align-items:center}
 .row .grow{flex:1}
+.acct{
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0 4px;
+  background:var(--accent-soft);
+}
+.acct-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.acct-label{font-size:12.5px;color:var(--muted)}
+.acct-top strong{font-size:17px;font-variant-numeric:tabular-nums}
+.acct-top strong.warn{color:#d2691e}
+.linkbtn{
+  margin-left:auto;background:none;border:0;color:var(--accent);
+  font-size:12.5px;padding:2px 4px;border-radius:6px;
+}
+.linkbtn:hover{background:var(--hover)}
+.acct-actions{display:flex;gap:8px;margin-top:10px}
+.acct-actions .btn{flex:1}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .btn{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:transparent;font-size:14px}
 .btn.primary{background:var(--accent);color:#fff;border-color:transparent}
@@ -313,6 +328,18 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
       </div>
     </label>
 
+    <div class="acct">
+      <div class="acct-top">
+        <span class="acct-label">账户余额</span>
+        <strong id="balText">填好 Key 后显示</strong>
+        <button class="linkbtn" id="balRefresh" type="button">刷新</button>
+      </div>
+      <div class="acct-actions">
+        <button class="btn" id="topupBtn" type="button">去充值</button>
+        <button class="btn" id="getkeyBtn" type="button">去拿 Key</button>
+      </div>
+    </div>
+
     <div class="note">
       怎么拿 Key：打开 platform.deepseek.com 登录 → 左侧「API Keys」→ 创建 → 复制 sk- 开头那串。<br>
       DeepSeek 按用量扣费，普通聊天一天通常几毛钱，费用由你自己付给 DeepSeek。
@@ -337,6 +364,9 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   var K_THINK = 'xiaotong.think';
   var K_SB = 'xiaotong.sidebarCollapsed';
   var K_THEME = 'xiaotong.theme';
+  var BALANCE_API = 'https://api.deepseek.com/user/balance';
+  var URL_KEY = 'https://platform.deepseek.com/api_keys';
+  var URL_TOPUP = 'https://platform.deepseek.com/top_up';
   var K_SEARCH = 'xiaotong.search';
   var K_DATA = 'xiaotong.data.v2';
   var K_OLD = 'xiaotong.chat';
@@ -361,6 +391,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   var sendBtn = document.getElementById('send');
   var stopBtn = document.getElementById('stop');
   var themeBtn = document.getElementById('themeBtn');
+  var balText = document.getElementById('balText');
   var thinkBtn = document.getElementById('thinkBtn');
   var searchBtn = document.getElementById('searchBtn');
   var chatTitle = document.getElementById('chatTitle');
@@ -754,7 +785,12 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
         sources.hidden = false;
       },
       error: function (msg) {
-        content.innerHTML = '<div class="err">' + esc(msg) + '</div>';
+        if (msg === '402') {
+          content.innerHTML = '<div class="err">账户余额不足，<a href="' + URL_TOPUP +
+            '" target="_blank" rel="noopener noreferrer">去充值</a>后再试（402）</div>';
+        } else {
+          content.innerHTML = '<div class="err">' + esc(msg) + '</div>';
+        }
       }
     };
   }
@@ -821,11 +857,40 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
     if (!busy) input.focus();
   }
 
+  async function fetchBalance() {
+    var key = (state.apiKey || '').trim();
+    if (!key) {
+      balText.textContent = '填好 Key 后显示';
+      balText.classList.remove('warn');
+      return;
+    }
+    balText.textContent = '查询中…';
+    balText.classList.remove('warn');
+    try {
+      var res = await fetch(BALANCE_API, {
+        headers: { 'Authorization': 'Bearer ' + key }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var data = await res.json();
+      var info = (data.balance_infos || [])[0];
+      if (!info) throw new Error('empty');
+      var symbol = info.currency === 'USD' ? '$' : '¥';
+      balText.textContent = symbol + info.total_balance;
+      if (!data.is_available) {
+        balText.textContent += '（不可用）';
+        balText.classList.add('warn');
+      }
+    } catch (e) {
+      balText.textContent = '查询失败';
+      balText.classList.add('warn');
+    }
+  }
+
   async function describeError(res) {
     var body = '';
     try { body = await res.text(); } catch (e) {}
     if (res.status === 401) return 'Key 不对或已失效，点右上角 ⚙ 重新填一下（401）';
-    if (res.status === 402) return '账户余额不足，去 platform.deepseek.com 充值后再试（402）';
+    if (res.status === 402) return '402';
     if (res.status === 429) return '请求太频繁，等几秒再试（429）';
     try {
       var j = JSON.parse(body);
@@ -1043,11 +1108,19 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   function openSettings(message) {
     keyInput.value = state.apiKey;
     dialog.showModal();
+    fetchBalance();
     keyInput.placeholder = message || 'sk-...';
     setTimeout(function () { keyInput.focus(); }, 30);
   }
 
   document.getElementById('keyBtn').addEventListener('click', function () { openSettings(); });
+  document.getElementById('balRefresh').addEventListener('click', fetchBalance);
+  document.getElementById('topupBtn').addEventListener('click', function () {
+    window.open(URL_TOPUP, '_blank', 'noopener');
+  });
+  document.getElementById('getkeyBtn').addEventListener('click', function () {
+    window.open(URL_KEY, '_blank', 'noopener');
+  });
 
   document.getElementById('eyeBtn').addEventListener('click', function () {
     var isPwd = keyInput.type === 'password';
