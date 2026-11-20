@@ -1,0 +1,17 @@
+{
+  "name": "dafeiyu-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "大肥鱼对话版 Android 壳",
+  "scripts": {
+    "sync": "mkdir -p www && cp index.html icon-192.png icon-512.png manifest.webmanifest www/",
+    "apk": "npm run sync && npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/android": "^7.0.0"
+  }
+}

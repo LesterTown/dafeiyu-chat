@@ -2,3 +2,24 @@
 .shots/
 preview.html
 blank.html
+
+# Node / Capacitor
+node_modules/
+www/
+
+# 安卓构建产物与本地配置
+android/local.properties
+android/keystore.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+
+# 签名密钥
+*.jks
+*.keystore
+
+# 打好的安装包（挂在 Releases 上）
+dist/

@@ -9,6 +9,11 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="manifest" href="./manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="大肥鱼">
+<meta name="format-detection" content="telephone=no">
 <script>
 (function () {
   try {
@@ -43,6 +48,18 @@ body{
   overflow:hidden;-webkit-text-size-adjust:100%;
 }
 button{font:inherit;color:inherit;cursor:pointer}
+/* iOS 添加到主屏幕后的独立模式 */
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+@supports(padding:max(0px)){
+  .composer{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .sidebar{padding-top:env(safe-area-inset-top)}
+}
+.ios-tip{display:none;align-items:flex-start;gap:8px;margin:0 12px 8px;padding:10px 12px;
+  border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,transparent);
+  color:var(--fg);font-size:13px;line-height:1.5}
+.ios-tip button{margin-left:auto;background:none;border:0;color:var(--muted);font-size:16px;line-height:1;padding:0 2px}
+html.ios-standalone .ios-tip{display:none!important}
+
 [hidden]{display:none !important}
 a{color:var(--accent)}
 
@@ -287,6 +304,10 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
     </header>
 
     <main id="scroller">
+      <div class="ios-tip" id="iosTip" hidden>
+        <span>想当 App 用？点 Safari 底部「分享」→「添加到主屏幕」，以后从桌面图标打开就行。</span>
+        <button id="iosTipClose" aria-label="知道了">×</button>
+      </div>
       <div class="wrap" id="list"></div>
       <section class="hello" id="hello">
         <img src="./icon-192.png" alt="">
@@ -361,7 +382,27 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--li
   var SEARCH_API = 'https://api.deepseek.com/v1/tools/search';
   var K_KEY = 'xiaotong.apiKey';
   var K_MODEL = 'xiaotong.model';
-  var K_THINK = 'xiaotong.think';
+  (function () {
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var standalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (standalone) document.documentElement.classList.add('ios-standalone');
+  if (!isIOS || standalone) return;
+  try { if (localStorage.getItem('xiaotong.iosTipDismissed') === '1') return; } catch (e) {}
+  document.addEventListener('DOMContentLoaded', function () {
+    var tip = document.getElementById('iosTip');
+    var close = document.getElementById('iosTipClose');
+    if (!tip) return;
+    tip.hidden = false;
+    if (close) close.addEventListener('click', function () {
+      tip.hidden = true;
+      try { localStorage.setItem('xiaotong.iosTipDismissed', '1'); } catch (e) {}
+    });
+  });
+})();
+
+var K_THINK = 'xiaotong.think';
   var K_SB = 'xiaotong.sidebarCollapsed';
   var K_THEME = 'xiaotong.theme';
   var BALANCE_API = 'https://api.deepseek.com/user/balance';
